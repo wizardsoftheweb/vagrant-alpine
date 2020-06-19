@@ -88,6 +88,7 @@ chroot $CHROOT_DIR /bin/sh <<"EOF"
     # Tidy up
     ls -alh /
     rm -rf ./blocks ./vagrant{,.pub}
+
 EOF
 
 cd ..
