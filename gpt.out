@@ -1,0 +1,9 @@
+label: gpt
+label-id: 2D832383-7163-1A44-99A4-8F981D5A39D7
+device: /dev/sda
+unit: sectors
+first-lba: 2048
+last-lba: 2097118
+
+/dev/sda1 : start=        2048, size=      204800, type=C12A7328-F81F-11D2-BA4B-00A0C93EC93B, uuid=DE79187C-46F7-D84D-9D8C-2AFB2E2AF6D5, attrs="LegacyBIOSBootable"
+/dev/sda2 : start=      206848, size=     1890271, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, uuid=071A1707-B556-9247-8A9D-D54B77097F8B
