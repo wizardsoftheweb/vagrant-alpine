@@ -4,6 +4,10 @@
 
 Otherwise known as generic ARM
 
+I spent a day trying to set up an ARM machine like an amd64 machine. I am not a smart man.
+
+This doesn't and won't work.
+
 ## Dependencies
 
 * `qemu`: In order for this to run, `qemu` must have ARM support.
