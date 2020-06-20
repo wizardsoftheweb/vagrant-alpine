@@ -50,7 +50,7 @@ EOF
 }
 
 # Attempt to gracefully die without leaving hanging loop devices everywhere
-trap unmount_everything EXIT
+# trap unmount_everything EXIT
 trap unmount_everything SIGINT
 
 # Get the source tarball
@@ -60,11 +60,12 @@ download_alpine_minirootfs
 rm -rf alpine.img
 qemu-img create alpine.img 1G
 
+# Create a GPT with a single partition (note its 'Legacy BIOS bootable' flag)
 sgdisk --clear \
     --new 1::-0 --typecode=1:8300 --change-name=1:'Linux root filesystem' --attributes=1:set:2 \
     alpine.img
 
-# # Create a loop device for the image
+# Create a loop device for the image
 FILE_POINTER=$(losetup --show --find alpine.img)
 
 # Update the partition info
@@ -73,21 +74,24 @@ partprobe "$FILE_POINTER"
 # Format the partitions
 mkfs.ext4 -F -L alpineroot "${FILE_POINTER}p1"
 
-# Create and populate the chroot dir
+# Create and mount the chroot dir
 rm -rf "$CHROOT_DIR"
 mkdir -p "$CHROOT_DIR"
 mount "${FILE_POINTER}p1" "$CHROOT_DIR"
 
+# Install syslinux bootloader files
 mkdir -p "$CHROOT_DIR/boot/syslinux"
 cp /usr/lib/syslinux/modules/bios/*.c32 "$CHROOT_DIR/boot/syslinux/"
 extlinux --install "$CHROOT_DIR/boot/syslinux"
 dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/mbr/gptmbr.bin of="$FILE_POINTER"
 
+# Populate the chroot dir with minirootfs
 mount_file_descriptors "$CHROOT_DIR"
 tar -zxf "$DOWNLOADED_TARBALL_NAME" -C "$CHROOT_DIR/"
 cp provision.sh "$CHROOT_DIR/"
 generate_blocks > "$CHROOT_DIR/blocks"
 
+# Run a provisioning script
 chroot "$CHROOT_DIR" /provision.sh
 
 # sudo qemu-system-x86_64 -drive format=raw,file=alpine.img -serial stdio -m 4G -cpu host -smp 2 -enable-kvm

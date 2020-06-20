@@ -17,6 +17,4 @@ apk update --no-cache
 apk add linux-virt syslinux
 
 sed -i -e 's/^default_kernel_opts.*$/default_kernel_opts="cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory"/' -e 's/^root=.*$/root='"$ROOT"'/' /etc/update-extlinux.conf
-cat /etc/update-extlinux.conf
 update-extlinux
-cat /boot/extlinux.conf
