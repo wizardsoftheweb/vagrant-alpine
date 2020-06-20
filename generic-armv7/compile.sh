@@ -14,7 +14,7 @@ trap unmount_everything SIGINT
 
 # Prep the image
 rm -rf generic-armv7.img
-qemu-img create -f qcow2 generic-armv7.img 1G
+qemu-img create generic-armv7.img 1G
 
 FILE_POINTER=$(losetup --partscan --show --find generic-armv7.img)
 
