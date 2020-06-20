@@ -4,11 +4,26 @@
 
 set -xe
 
+FILE_DESCRIPTORS=( dev sys proc )
+MOUNT_POINTS=()
+
 function unmount_everything {
     if [ ! -z ${FILE_POINTER+x} ]; then
         losetup -d $FILE_POINTER
     fi
+    for mount_point in "${MOUNT_POINTS[@]}"; do
+        umount -q $mount_point
+    done
 }
+
+function mount_file_descriptors {
+    mount_dir=${1:mnt}
+    for fd in "${FILE_DESCRIPTOS[@]}"; do
+        mount --bind /$fd ${mount_dir}/$fd
+        MOUNT_POINTS+=(${mount_dir}/$fd)
+    done
+}
+
 trap unmount_everything EXIT
 trap unmount_everything SIGINT
 
