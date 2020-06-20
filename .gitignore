@@ -1,1 +1,3 @@
 alpine.*
+mnt/
+initramfs-*
