@@ -3,21 +3,20 @@
 # Copyright 2020 CJ Harries
 # Licensed under http://www.apache.org/licenses/LICENSE-2.0
 
-set -xe
+set -x
 
 # shellcheck disable=SC1091
 . blocks
 echo "$FILE_POINTER"
-echo "$BOOT"
 echo "$ROOT"
 
-echo "$ROOT /         ext4 rw,relatime 0 1" >> /etc/fstab
-echo "$BOOT /boot/EFI ext4 rw,relatime 0 2" >> /etc/fstab
+echo "$ROOT / ext4 rw,relatime 0 1" >> /etc/fstab
 
 echo 'nameserver 1.1.1.1' > /etc/resolv.conf
 apk update --no-cache
-apk add linux-virt
+apk add linux-virt syslinux
 
-# apk add grub grub-bios
-# grub-install --modules="ext2 part_gpt" --target=i386-pc "$FILE_POINTER"
-grub-install --force --target=x86_64-efi --efi-directory=/boot/EFI --boot-directory=/boot
+sed -i -e 's/^default_kernel_opts.*$/default_kernel_opts="cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory"/' -e 's/^root=.*$/root='"$ROOT"'/' /etc/update-extlinux.conf
+cat /etc/update-extlinux.conf
+update-extlinux
+cat /boot/extlinux.conf

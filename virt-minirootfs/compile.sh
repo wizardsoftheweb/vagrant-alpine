@@ -3,7 +3,7 @@
 # Copyright 2020 CJ Harries
 # Licensed under http://www.apache.org/licenses/LICENSE-2.0
 
-set -xe
+set -x
 
 # Variables to maybe change
 DOWNLOADED_TARBALL_NAME="alpine.minirootfs.tar.gz"
@@ -45,13 +45,12 @@ function download_alpine_minirootfs {
 function generate_blocks {
     cat <<EOF
 FILE_POINTER="${FILE_POINTER}"
-BOOT="$(blkid "${FILE_POINTER}p2" --output export | grep --color=never '^UUID')"
-ROOT="$(blkid "${FILE_POINTER}p3" --output export | grep --color=never '^UUID')"
+ROOT="$(blkid "${FILE_POINTER}p1" --output export | grep --color=never '^UUID')"
 EOF
 }
 
 # Attempt to gracefully die without leaving hanging loop devices everywhere
-# trap unmount_everything EXIT
+trap unmount_everything EXIT
 trap unmount_everything SIGINT
 
 # Get the source tarball
@@ -61,35 +60,34 @@ download_alpine_minirootfs
 rm -rf alpine.img
 qemu-img create alpine.img 1G
 
-# Create a loop device for the image
-FILE_POINTER=$(losetup --show --find alpine.img)
-
-# Partition the file
-# https://blog.heckel.io/2017/05/28/creating-a-bios-gpt-and-uefi-gpt-grub-bootable-linux-system/#Creating-a-GPT-with-a-BIOS-boot-partition-and-an-EFI-System-Partition
 sgdisk --clear \
-  --new 1::+1M   --typecode=1:ef02 --change-name=1:'BIOS boot partition' \
-  --new 2::+100M --typecode=2:ef00 --change-name=2:'EFI System' \
-  --new 3::-0    --typecode=3:8300 --change-name=3:'Linux root filesystem' \
-  "$FILE_POINTER"
+    --new 1::-0 --typecode=1:8300 --change-name=1:'Linux root filesystem' --attributes=1:set:2 \
+    alpine.img
+
+# # Create a loop device for the image
+FILE_POINTER=$(losetup --show --find alpine.img)
 
 # Update the partition info
 partprobe "$FILE_POINTER"
 
 # Format the partitions
-# The first partition is left alone for grub's core.img
-mkfs.fat  -F32               "${FILE_POINTER}p2"
-mkfs.ext4 -F   -L alpineroot "${FILE_POINTER}p3"
+mkfs.ext4 -F -L alpineroot "${FILE_POINTER}p1"
 
 # Create and populate the chroot dir
 rm -rf "$CHROOT_DIR"
 mkdir -p "$CHROOT_DIR"
-mount "${FILE_POINTER}p3" "$CHROOT_DIR"
-mkdir -p "$CHROOT_DIR/boot/EFI"
-MOUNT_POINTS+=("$CHROOT_DIR/boot/EFI")
-mount "${FILE_POINTER}p2" "$CHROOT_DIR/boot/EFI"
+mount "${FILE_POINTER}p1" "$CHROOT_DIR"
+
+mkdir -p "$CHROOT_DIR/boot/syslinux"
+cp /usr/lib/syslinux/modules/bios/*.c32 "$CHROOT_DIR/boot/syslinux/"
+extlinux --install "$CHROOT_DIR/boot/syslinux"
+dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/mbr/gptmbr.bin of="$FILE_POINTER"
+
 mount_file_descriptors "$CHROOT_DIR"
 tar -zxf "$DOWNLOADED_TARBALL_NAME" -C "$CHROOT_DIR/"
 cp provision.sh "$CHROOT_DIR/"
 generate_blocks > "$CHROOT_DIR/blocks"
 
 chroot "$CHROOT_DIR" /provision.sh
+
+# sudo qemu-system-x86_64 -drive format=raw,file=alpine.img -serial stdio -m 4G -cpu host -smp 2 -enable-kvm
