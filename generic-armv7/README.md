@@ -22,3 +22,5 @@ Otherwise known as generic ARM
     ```
 
     If you're a glutton for punishment like me, you [can build from source](https://wiki.qemu.org/Documentation).
+
+    We'll also need `qemu-arm-static` which can be installed or built.
