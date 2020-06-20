@@ -60,3 +60,7 @@ No matter what, I was unable to get the image to boot. At a glance, it looks lik
 * Is the operator the problem?
 
 If you have any insight, I'd love to hear from you! PRs, comments, and issues are very welcome.
+
+## External Resources
+
+* [Grub + scripting things I didn't know I could](https://blog.heckel.io/2017/05/28/creating-a-bios-gpt-and-uefi-gpt-grub-bootable-linux-system/)
