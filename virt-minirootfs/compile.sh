@@ -42,8 +42,16 @@ function download_alpine_minirootfs {
     fi
 }
 
+function generate_blocks {
+    cat <<EOF
+FILE_POINTER="${FILE_POINTER}"
+BOOT="$(blkid "${FILE_POINTER}p2" --output export | grep --color=never '^UUID')"
+ROOT="$(blkid "${FILE_POINTER}p3" --output export | grep --color=never '^UUID')"
+EOF
+}
+
 # Attempt to gracefully die without leaving hanging loop devices everywhere
-trap unmount_everything EXIT
+# trap unmount_everything EXIT
 trap unmount_everything SIGINT
 
 # Get the source tarball
@@ -54,7 +62,7 @@ rm -rf alpine.img
 qemu-img create alpine.img 1G
 
 # Create a loop device for the image
-FILE_POINTER=$(losetup --partscan --show --find alpine.img)
+FILE_POINTER=$(losetup --show --find alpine.img)
 
 # Partition the file
 # https://blog.heckel.io/2017/05/28/creating-a-bios-gpt-and-uefi-gpt-grub-bootable-linux-system/#Creating-a-GPT-with-a-BIOS-boot-partition-and-an-EFI-System-Partition
@@ -69,15 +77,19 @@ partprobe "$FILE_POINTER"
 
 # Format the partitions
 # The first partition is left alone for grub's core.img
-mkfs.fat  -F32 "${FILE_POINTER}p2"
-mkfs.ext4 -F   "${FILE_POINTER}p3"
+mkfs.fat  -F32               "${FILE_POINTER}p2"
+mkfs.ext4 -F   -L alpineroot "${FILE_POINTER}p3"
 
 # Create and populate the chroot dir
 rm -rf "$CHROOT_DIR"
 mkdir -p "$CHROOT_DIR"
 mount "${FILE_POINTER}p3" "$CHROOT_DIR"
+mkdir -p "$CHROOT_DIR/boot/EFI"
+MOUNT_POINTS+=("$CHROOT_DIR/boot/EFI")
+mount "${FILE_POINTER}p2" "$CHROOT_DIR/boot/EFI"
 mount_file_descriptors "$CHROOT_DIR"
 tar -zxf "$DOWNLOADED_TARBALL_NAME" -C "$CHROOT_DIR/"
 cp provision.sh "$CHROOT_DIR/"
+generate_blocks > "$CHROOT_DIR/blocks"
 
 chroot "$CHROOT_DIR" /provision.sh
