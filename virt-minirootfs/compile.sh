@@ -50,7 +50,7 @@ EOF
 }
 
 # Attempt to gracefully die without leaving hanging loop devices everywhere
-# trap unmount_everything EXIT
+trap unmount_everything EXIT
 trap unmount_everything SIGINT
 
 # Get the source tarball
