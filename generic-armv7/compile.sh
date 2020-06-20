@@ -26,4 +26,10 @@ sgdisk --clear \
   --new 3::-0    --typecode=3:8300 --change-name=3:'Linux root filesystem' \
   $FILE_POINTER
 
-losetup -d $FILE_POINTER
+# Update the partition info
+partprobe $FILE_POINTER
+
+# Format format the partitions
+# The first partition is left alone for grub's core.img
+mkfs.fat  -F32 ${FILE_POINTER}p2
+mkfs.ext4 -F   ${FILE_POINTER}p3
