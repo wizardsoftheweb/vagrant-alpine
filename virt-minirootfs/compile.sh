@@ -16,8 +16,8 @@ MOUNT_POINTS=()
 # Convenience fnc to nuke all the mounts
 function unmount_everything {
     for mount_point in "${MOUNT_POINTS[@]}"; do
-        umount -q "$mount_point"
         sleep 1
+        umount -q "$mount_point"
     done
     umount -q "$CHROOT_DIR"
     if [[ -n ${FILE_POINTER+x} ]]; then
@@ -73,10 +73,11 @@ mkfs.fat  -F32 "${FILE_POINTER}p2"
 mkfs.ext4 -F   "${FILE_POINTER}p3"
 
 # Create and populate the chroot dir
+rm -rf "$CHROOT_DIR"
 mkdir -p "$CHROOT_DIR"
 mount "${FILE_POINTER}p3" "$CHROOT_DIR"
 mount_file_descriptors "$CHROOT_DIR"
-tar -zxf "$DOWNLOADED_TARBALL_NAME" -C "$CHROOT_DIR"
+tar -zxf "$DOWNLOADED_TARBALL_NAME" -C "$CHROOT_DIR/"
 cp provision.sh "$CHROOT_DIR/"
 
 chroot "$CHROOT_DIR" /provision.sh
